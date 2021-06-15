@@ -1,8 +1,8 @@
 {
-  "name": "vue-admin-template",
-  "version": "4.4.0",
-  "description": "A vue admin template with Element UI & axios & iconfont & permission control & lint",
-  "author": "Pan <panfree23@gmail.com>",
+  "name": "vueblog-admin",
+  "version": "1.0.0",
+  "description": "基于vue和elementui的博客后台管理系统前端页面",
+  "author": "song1036752344@163.com",
   "scripts": {
     "dev": "vue-cli-service serve",
     "build:prod": "vue-cli-service build",
@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "axios": "0.18.1",
+    "blueimp-md5": "^2.18.0",
     "core-js": "3.6.5",
     "element-ui": "2.13.2",
     "js-cookie": "2.2.0",
