@@ -1,6 +1,7 @@
 import request from '@/utils/request'
 
-const baseUrl = '/category'
+const baseUrl = '/admin/categories'
+
 export function save(data) {
   return request({
     url: `${baseUrl}/`,
@@ -31,7 +32,7 @@ export function deleteById(id) {
   })
 }
 
-export function deleteMany(data) {
+export function deleteBatch(data) {
   return request({
     url: `${baseUrl}/`,
     method: 'delete',
@@ -45,4 +46,3 @@ export function list() {
     method: 'get'
   })
 }
-
