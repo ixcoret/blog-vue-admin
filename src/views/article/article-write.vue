@@ -16,6 +16,7 @@
               filterable
               allow-create
               default-first-option
+              clearable
               placeholder="选择已有分类或添加新分类">
               <el-option
                 v-for="category in categories"
@@ -37,6 +38,7 @@
               allow-create
               default-first-option
               value-key="id"
+              clearable
               placeholder="选择已有标签或添加新标签，最多4个">
               <el-option
                 v-for="tag in tags"
@@ -65,7 +67,7 @@
 import { mavonEditor } from 'mavon-editor'
 import 'mavon-editor/dist/css/index.css'
 import { list } from '@/api/category'
-import { listTags } from '@/api/tag'
+import { listTagOptions } from '@/api/tag'
 import { save } from '@/api/article'
 
 import { ME_HEIGHT, ME_FULLSCREEN_HEIGHT } from '@/constant/mavonEditorHeight'
@@ -95,7 +97,7 @@ export default {
   },
   created() {
     this.getCategories()
-    this.getTags()
+    this.listTagOptions()
   },
   methods: {
     fullScreen(status) {
@@ -106,8 +108,8 @@ export default {
         this.categories = res.data
       })
     },
-    getTags() {
-      listTags().then(res => {
+    listTagOptions() {
+      listTagOptions().then(res => {
         this.tags = res.data
       })
     },
@@ -149,7 +151,7 @@ export default {
             this.$message.success(res.message)
           })
           this.getCategories()
-          this.getTags()
+          this.listTagOptions()
         } else {
           console.log('error submit!!')
           return false

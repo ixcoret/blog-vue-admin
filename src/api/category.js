@@ -40,9 +40,17 @@ export function deleteBatch(data) {
   })
 }
 
-export function list() {
+export function listCategoryOptions() {
+  return request({
+    url: `${baseUrl}/options`,
+    method: 'get'
+  })
+}
+
+export function listCategories(params) {
   return request({
     url: `${baseUrl}/`,
-    method: 'get'
+    method: 'get',
+    params: params
   })
 }

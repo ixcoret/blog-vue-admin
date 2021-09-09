@@ -34,6 +34,7 @@
       stripe
       border
       :data="tableData"
+      :default-sort = "{prop: 'createTime', order: 'descending'}"
       @selection-change="handleSelectionChange">
       <el-table-column
         type="selection"
@@ -70,6 +71,16 @@
         </template>
       </el-table-column>
     </el-table>
+    <el-pagination
+      class="pagination"
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+      :current-page="currentPage"
+      :page-sizes="[5, 10, 15]"
+      :page-size="pageSize"
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="total">
+    </el-pagination>
     <el-dialog
       title="编辑分类"
       :visible.sync="dialogVisible"
@@ -95,7 +106,7 @@
 </template>
 
 <script>
-import { deleteBatch, deleteById, list, update, save } from '@/api/category'
+import { deleteBatch, deleteById, listCategories, update, save } from '@/api/category'
 
 export default {
   name: 'Category',
@@ -107,16 +118,21 @@ export default {
       category: {
         name: ''
       },
-      dialogVisible: false
+      dialogVisible: false,
+      currentPage: 1,
+      pageSize: 10,
+      total: 0
     }
   },
   created() {
-    this.getData()
+    this.listCategories()
   },
   methods: {
-    getData() {
-      list().then(res => {
-        this.tableData = res.data
+    listCategories() {
+      const condition = { pageNum: this.currentPage, pageSize: this.pageSize }
+      listCategories(condition).then(res => {
+        this.tableData = res.data.resultList
+        this.total = res.data.total
       })
     },
     add() {
@@ -125,7 +141,7 @@ export default {
       if (this.category.name) {
         save(this.category).then(res => {
           this.category.name = ''
-          this.getData()
+          this.listCategories()
           this.$message.success(res.message)
         })
       } else {
@@ -144,7 +160,7 @@ export default {
         type: 'warning'
       }).then(() => {
         deleteById(data.id).then(resp => {
-          this.getData()
+          this.listCategories()
           this.$message.success(resp.message)
         })
       }).catch(() => {
@@ -169,8 +185,8 @@ export default {
         console.log(ids)
         deleteBatch(ids).then(resp => {
           if (resp) {
-            this.getData()
             this.$message.success(resp.message)
+            this.listCategories()
           }
         })
       }).catch(() => {
@@ -188,10 +204,18 @@ export default {
       update(this.category).then(resp => {
         if (resp) {
           this.dialogVisible = false
-          this.getData()
           this.$message.success(resp.message)
+          this.listCategories()
         }
       })
+    },
+    handleSizeChange(val) {
+      this.pageSize = val
+      this.listCategories()
+    },
+    handleCurrentChange(val) {
+      this.currentPage = val
+      this.listCategories()
     }
   }
 }
@@ -207,5 +231,7 @@ export default {
     width: 300px;
     margin-right: 10px;
   }
+  .pagination {
+    margin-top: 20px;
+  }
 </style>
-

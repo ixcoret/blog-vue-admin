@@ -84,7 +84,7 @@
       </el-table-column>
     </el-table>
     <el-pagination
-      class="pagination-container"
+      class="pagination"
       @size-change="handleSizeChange"
       @current-change="handleCurrentChange"
       :current-page="currentPage"
@@ -149,7 +149,7 @@ export default {
   .operation-container {
     margin-bottom: 20px;
   }
-  .pagination-container {
+  .pagination {
     margin-top: 20px;
   }
 </style>
