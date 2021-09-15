@@ -1,58 +1,83 @@
 <template>
   <div class="app-container">
-    <el-form ref="articleForm" size="small" :model="articleForm" :rules="articleRules" hide-required-asterisk label-width="42px">
+    <el-form ref="article" size="small" :model="article" :rules="articleRules" hide-required-asterisk label-width="42px">
       <el-form-item label="标题" prop="title">
-        <el-input v-model="articleForm.title" size="medium" type="text" minlength="4" maxlength="100" show-word-limit placeholder="请输入文章标题" />
+        <el-input v-model="article.title" type="text" minlength="5" maxlength="100" show-word-limit placeholder="请输入文章标题" />
       </el-form-item>
 
       <el-row type="flex" justify="space-between">
-        <el-col :span="7">
+        <el-col :span="6">
           <el-form-item label="分类">
             <!--单选时，v-model的值为当前被选中的el-option的 value 属性值-->
             <el-select
-              v-model="bindCategory"
+              v-model="article.categoryName"
               style="width: 100%"
-              size="medium"
               filterable
               allow-create
               default-first-option
               clearable
               placeholder="选择已有分类或添加新分类">
               <el-option
-                v-for="category in categories"
-                :key="category.id"
-                :label="category.name"
-                :value="category.id + ':' + category.name" />
+                v-for="item in categoryList"
+                :key="item.id"
+                :label="item.categoryName"
+                :value="item.categoryName" />
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="16">
+        <el-col :span="17">
           <el-form-item label="标签">
-            <el-select
-              v-model="bindTags"
-              style="width: 100%"
-              size="medium"
-              filterable
-              multiple
-              :multiple-limit="4"
-              allow-create
-              default-first-option
-              value-key="id"
-              clearable
-              placeholder="选择已有标签或添加新标签，最多4个">
-              <el-option
-                v-for="tag in tags"
-                :key="tag.id"
-                :label="tag.name"
-                :value="tag.id + ':' + tag.name">
-              </el-option>
-            </el-select>
+            <!-- 文章标签 -->
+            <el-tag
+              v-for="(item, index) of article.tagNameList"
+              :key="index"
+              style="margin:0 10px 0 0"
+              closable
+              @close="removeTag(item)"
+            >
+              {{ item }}
+            </el-tag>
+            <!-- 标签选项 -->
+            <el-popover
+              placement="bottom-start"
+              width="600"
+              trigger="click"
+              v-if="article.tagNameList.length < 4">
+              <div style="margin-bottom: 10px">创建标签</div>
+              <el-autocomplete
+                style="width:80%"
+                v-model="tagName"
+                :fetch-suggestions="searchTags"
+                placeholder="输入标签名搜索，按enter键可添加自定义标签"
+                :trigger-on-focus="false"
+                @keyup.enter.native="saveTag"
+                @select="handleSelectTag"
+              >
+                <template slot-scope="{ item }">
+                  <div>{{ item.tagName }}</div>
+                </template>
+              </el-autocomplete>
+              <div style="margin: 20px 0 10px">选择标签</div>
+              <!-- 标签 -->
+              <div class="popover-container">
+                <el-tag
+                  v-for="(item, index) of tagList"
+                  :key="index"
+                  style="margin: 5px"
+                  :class="tagClass(item)"
+                  @click="addTag(item)"
+                >
+                  {{ item.tagName }}
+                </el-tag>
+              </div>
+              <el-button slot="reference">添加标签</el-button>
+            </el-popover>
           </el-form-item>
         </el-col>
       </el-row>
 
       <el-form-item label="正文">
-        <mavon-editor v-model="articleForm.content" :style="editorHeight" @fullScreen="fullScreen"/>
+        <mavon-editor v-model="article.content" :style="editorHeight" @fullScreen="fullScreen" />
       </el-form-item>
 
       <el-form-item>
@@ -66,9 +91,9 @@
 <script>
 import { mavonEditor } from 'mavon-editor'
 import 'mavon-editor/dist/css/index.css'
-import { list } from '@/api/category'
+import { listCategoryOptions } from '@/api/category'
 import { listTagOptions } from '@/api/tag'
-import { save } from '@/api/article'
+import { save, getById } from '@/api/article'
 
 import { ME_HEIGHT, ME_FULLSCREEN_HEIGHT } from '@/constant/mavonEditorHeight'
 
@@ -80,78 +105,98 @@ export default {
   data() {
     return {
       editorHeight: ME_HEIGHT,
-      articleForm: {
+      categoryList: [],
+      tagList: [],
+      article: {
         title: '',
-        categoryForm: {},
-        tags: [],
+        categoryName: null,
+        tagNameList: [],
         content: ''
       },
-      bindCategory: '',
-      bindTags: [],
-      categories: [],
-      tags: [],
+      tagName: '',
       articleRules: {
         title: [{ required: true, message: '请输入文章标题', trigger: 'blur' }]
       }
     }
   },
   created() {
-    this.getCategories()
+    const path = this.$route.path
+    const arr = path.split('/')
+    const articleId = arr[3]
+    if (articleId) {
+      getById(articleId).then(resp => {
+        if (resp) {
+          this.article = resp.data
+        }
+      })
+    }
+    this.listCategoryOptions()
     this.listTagOptions()
+  },
+  computed: {
+    tagClass() {
+      return function(item) {
+        const index = this.article.tagNameList.indexOf(item.tagName)
+        return index !== -1 ? 'tag-item-select' : 'tag-item'
+      }
+    }
   },
   methods: {
     fullScreen(status) {
       this.editorHeight = status ? ME_FULLSCREEN_HEIGHT : ME_HEIGHT
     },
-    getCategories() {
-      list().then(res => {
-        this.categories = res.data
+    listCategoryOptions() {
+      listCategoryOptions().then(res => {
+        this.categoryList = res.data
       })
     },
     listTagOptions() {
       listTagOptions().then(res => {
-        this.tags = res.data
+        this.tagList = res.data
       })
     },
-    // 将选择的以及新创建的所有标签重建为标签对象
-    rebuildSeletedTags() {
-      const tagArr = []
-      this.bindTags.forEach(e => {
-        const propArr = e.split(':')
-        // 已存在的标签
-        if (propArr.length === 2) {
-          tagArr.push({ id: propArr[0], name: propArr[1] })
-        }
-        // 新增的标签
-        if (propArr.length === 1) {
-          tagArr.push({ name: propArr[0] })
-        }
-      })
-      this.articleForm.tags = tagArr
+    searchTags(queryString, cb) {
+      var tagList = this.tagList
+      var results = queryString ? tagList.filter(this.createFilter(queryString)) : tagList
+      // 调用 callback 返回建议列表的数据
+      cb(results)
     },
-    // 将选择的或新创建的分类重建为分类对象
-    rebuildSelectedCategory() {
-      const propArr = this.bindCategory.split(':')
-      // 已存在的标签
-      if (propArr.length === 2) {
-        this.articleForm.categoryForm = { id: propArr[0], name: propArr[1] }
+    createFilter(queryString) {
+      return (tag) => {
+        return (tag.tagName.toLowerCase().indexOf(queryString.toLowerCase()) !== -1)
       }
-      // 新增的标签
-      if (propArr.length === 1) {
-        this.articleForm.categoryForm = { name: propArr[0] }
+    },
+    handleSelectTag(item) {
+      this.addTag({
+        tagName: item.tagName
+      })
+    },
+    saveTag() {
+      if (this.tagName.trim() !== '') {
+        this.addTag({
+          tagName: this.tagName
+        })
+        this.tagName = ''
       }
+    },
+    addTag(item) {
+      if (this.article.tagNameList.indexOf(item.tagName) === -1) {
+        this.article.tagNameList.push(item.tagName)
+      }
+    },
+    removeTag(item) {
+      const index = this.article.tagNameList.indexOf(item)
+      this.article.tagNameList.splice(index, 1)
     },
     // 发布文章
     publish() {
-      this.$refs.articleForm.validate(valid => {
+      this.$refs.article.validate(valid => {
+        console.log(this.article)
         if (valid) {
-          this.rebuildSelectedCategory()
-          this.rebuildSeletedTags()
-          save(this.articleForm).then(res => {
+          save(this.article).then(res => {
             this.$message.success(res.message)
+            this.$router.push({ path: '/article/list' })
           })
-          this.getCategories()
-          this.listTagOptions()
         } else {
           console.log('error submit!!')
           return false
@@ -163,4 +208,11 @@ export default {
 }
 </script>
 <style scoped>
+  .tag-item {
+    cursor: pointer;
+  }
+  .tag-item-select {
+    cursor: not-allowed;
+    color: #cccccc !important;
+  }
 </style>

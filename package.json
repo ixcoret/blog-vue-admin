@@ -1,6 +1,6 @@
 {
-  "name": "blog-vue-background",
-  "version": "1.0.0",
+  "name": "blog-vue-admin",
+  "version": "0.1.0",
   "description": "基于vue和elementui的博客后台管理系统前端页面",
   "author": "song1036752344@163.com",
   "scripts": {

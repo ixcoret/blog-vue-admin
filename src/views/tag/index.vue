@@ -8,16 +8,7 @@
           :disabled="multipleSelection.length === 0"
           @click="deleteBatch">批量删除
         </el-button>
-      </div>
-      <div>
-        <el-input
-          v-model="tag.name"
-          class="input"
-          size="small"
-          placeholder="请输入标签名称"
-          @keydown.enter.native="add">
-        </el-input>
-        <el-button type="primary" icon="el-icon-plus" size="small" @click="add">新增</el-button>
+        <el-button type="primary" icon="el-icon-plus" size="small" @click="openDialog(null)">新增</el-button>
       </div>
       <div>
         <el-input
@@ -41,7 +32,7 @@
         align="center">
       </el-table-column>
       <el-table-column
-        prop="name"
+        prop="tagName"
         align="center"
         label="标签名称">
       </el-table-column>
@@ -61,7 +52,7 @@
         <template slot-scope="scope">
           <el-button
             size="mini"
-            @click="handleUpdate(scope.row)">编辑
+            @click="openDialog(scope.row)">编辑
           </el-button>
           <el-button
             size="mini"
@@ -73,24 +64,25 @@
     </el-table>
     <el-pagination
       class="pagination"
+      background
       @size-change="handleSizeChange"
       @current-change="handleCurrentChange"
-      :current-page="currentPage"
+      :current-page="pagination.pageNum"
       :page-sizes="[5, 10, 15]"
-      :page-size="pageSize"
+      :page-size="pagination.pageSize"
       layout="total, sizes, prev, pager, next, jumper"
-      :total="total">
+      :total="pagination.total">
     </el-pagination>
     <el-dialog
-      title="编辑标签"
       :visible.sync="dialogVisible"
       width="30%">
+      <div class="dialog-title-container" slot="title" ref="tagTitle" />
       <el-form :model="tag" size="small" label-width="80px">
         <el-form-item label="标签名称">
-          <el-input v-model="tag.name" style="width: 90%" @keydown.enter.native="doUpdate"/>
+          <el-input v-model="tag.tagName" style="width: 90%" @keydown.enter.native="saveOrUpdate"/>
         </el-form-item>
       </el-form>
-      <span slot="footer" class="dialog-footer">
+      <div slot="footer" class="dialog-footer">
         <el-button
           size="small"
           @click="dialogVisible = false">取 消
@@ -98,9 +90,9 @@
         <el-button
           size="small"
           type="primary"
-          @click="doUpdate">确 定
+          @click="saveOrUpdate">确 定
         </el-button>
-      </span>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -116,12 +108,15 @@ export default {
       multipleSelection: [],
       keywords: '',
       tag: {
-        name: ''
+        id: null,
+        tagName: ''
       },
       dialogVisible: false,
-      currentPage: 1,
-      pageSize: 10,
-      total: 0
+      pagination: {
+        pageNum: 1,
+        pageSize: 10,
+        total: 0
+      }
     }
   },
   created() {
@@ -129,37 +124,59 @@ export default {
   },
   methods: {
     listTags() {
-      const condition = { pageNum: this.currentPage, pageSize: this.pageSize }
+      const condition = { pageNum: this.pagination.pageNum, pageSize: this.pagination.pageSize }
       listTags(condition).then(res => {
-        this.tableData = res.data.resultList
-        this.total = res.data.total
+        this.tableData = res.data.list
+        this.pagination.total = res.data.total
       })
     },
-    add() {
+    openDialog(tag) {
+      if (tag != null) {
+        this.tag.id = tag.id
+        this.tag.tagName = tag.tagName
+        this.$refs.tagTitle.innerHTML = "修改标签";
+      } else {
+        this.tag.id = null;
+        this.tag.tagName = "";
+        this.$refs.tagTitle.innerHTML = "添加标签";
+      }
+      this.dialogVisible = true;
+    },
+    saveOrUpdate() {
       // 去除字符串两端空格字符
-      this.tag.name = this.tag.name.trim()
-      if (this.tag.name) {
-        save(this.tag).then(res => {
-          this.tag.name = ''
-          this.listTags()
-          this.$message.success(res.message)
+      this.tag.tagName = this.tag.tagName.trim()
+      if (this.tag.tagName.trim() === '') {
+        this.$message.error('分类名不能为空！')
+        return false
+      }
+      if (this.tag.id === null) {
+        save(this.tag).then(resp => {
+          if (resp) {
+            this.dialogVisible = false
+            this.$message.success(resp.message)
+            this.listTags()
+          }
         })
       } else {
-        this.$message.error('标签名称不能为空！')
+        update(this.tag).then(resp => {
+          if (resp) {
+            this.dialogVisible = false
+            this.$message.success(resp.message)
+            this.listTags()
+          }
+        })
       }
-    },
-    search() {
     },
     handleSelectionChange(val) {
       this.multipleSelection = val
     },
-    handleDelete(data) {
-      this.$confirm('确定删除[' + data.name + ']标签?', '提示', {
+    handleDelete(tag) {
+      this.$confirm('确定删除[' + tag.tagName + ']标签?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        deleteById(data.id).then(resp => {
+        deleteById(tag.id).then(resp => {
           this.listTags()
           this.$message.success(resp.message)
         })
@@ -196,26 +213,15 @@ export default {
         })
       })
     },
-    handleUpdate(data) {
-      Object.assign(this.tag, data)
-      this.dialogVisible = true
-    },
-    doUpdate() {
-      update(this.tag).then(resp => {
-        if (resp) {
-          this.dialogVisible = false
-          this.$message.success(resp.message)
-          this.listTags()
-        }
-      })
-    },
     handleSizeChange(val) {
-      this.pageSize = val
+      this.pagination.pageSize = val
       this.listTags()
     },
     handleCurrentChange(val) {
-      this.currentPage = val
+      this.pagination.pageNum = val
       this.listTags()
+    },
+    search() {
     }
   }
 }

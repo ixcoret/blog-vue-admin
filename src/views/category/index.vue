@@ -8,16 +8,7 @@
           :disabled="multipleSelection.length === 0"
           @click="deleteBatch">批量删除
         </el-button>
-      </div>
-      <div>
-        <el-input
-          v-model="category.name"
-          class="input"
-          size="small"
-          placeholder="请输入分类名称"
-          @keydown.enter.native="add">
-        </el-input>
-        <el-button type="primary" icon="el-icon-plus" size="small" @click="add">新增</el-button>
+        <el-button type="primary" icon="el-icon-plus" size="small" @click="openDialog(null)">新增</el-button>
       </div>
       <div>
         <el-input
@@ -34,14 +25,14 @@
       stripe
       border
       :data="tableData"
-      :default-sort = "{prop: 'createTime', order: 'descending'}"
+      :default-sort="{prop: 'createTime', order: 'descending'}"
       @selection-change="handleSelectionChange">
       <el-table-column
         type="selection"
         align="center">
       </el-table-column>
       <el-table-column
-        prop="name"
+        prop="categoryName"
         align="center"
         label="分类名称">
       </el-table-column>
@@ -61,7 +52,7 @@
         <template slot-scope="scope">
           <el-button
             size="mini"
-            @click="handleUpdate(scope.row)">编辑
+            @click="openDialog(scope.row)">编辑
           </el-button>
           <el-button
             size="mini"
@@ -73,24 +64,25 @@
     </el-table>
     <el-pagination
       class="pagination"
+      background
       @size-change="handleSizeChange"
       @current-change="handleCurrentChange"
-      :current-page="currentPage"
+      :current-page="pagination.pageNum"
       :page-sizes="[5, 10, 15]"
-      :page-size="pageSize"
+      :page-size="pagination.pageSize"
       layout="total, sizes, prev, pager, next, jumper"
-      :total="total">
+      :total="pagination.total">
     </el-pagination>
     <el-dialog
-      title="编辑分类"
       :visible.sync="dialogVisible"
       width="30%">
+      <div class="dialog-title-container" slot="title" ref="categoryTitle" />
       <el-form :model="category" size="small" label-width="80px">
         <el-form-item label="分类名称">
-          <el-input v-model="category.name" style="width: 90%" @keydown.enter.native="doUpdate"/>
+          <el-input v-model="category.categoryName" style="width: 90%" @keydown.enter.native="saveOrUpdate"/>
         </el-form-item>
       </el-form>
-      <span slot="footer" class="dialog-footer">
+      <div slot="footer" class="dialog-footer">
         <el-button
           size="small"
           @click="dialogVisible = false">取 消
@@ -98,9 +90,9 @@
         <el-button
           size="small"
           type="primary"
-          @click="doUpdate">确 定
+          @click="saveOrUpdate">确 定
         </el-button>
-      </span>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -116,12 +108,15 @@ export default {
       multipleSelection: [],
       keywords: '',
       category: {
-        name: ''
+        id: null,
+        categoryName: ''
       },
       dialogVisible: false,
-      currentPage: 1,
-      pageSize: 10,
-      total: 0
+      pagination: {
+        pageNum: 1,
+        pageSize: 10,
+        total: 0
+      }
     }
   },
   created() {
@@ -129,37 +124,59 @@ export default {
   },
   methods: {
     listCategories() {
-      const condition = { pageNum: this.currentPage, pageSize: this.pageSize }
+      const condition = { pageNum: this.pagination.pageNum, pageSize: this.pagination.pageSize }
       listCategories(condition).then(res => {
-        this.tableData = res.data.resultList
-        this.total = res.data.total
+        this.tableData = res.data.list
+        this.pagination.total = res.data.total
       })
     },
-    add() {
+    openDialog(category) {
+      if (category != null) {
+        this.category.id = category.id
+        this.category.categoryName = category.categoryName
+        this.$refs.categoryTitle.innerHTML = "修改分类";
+      } else {
+        this.category.id = null;
+        this.category.categoryName = "";
+        this.$refs.categoryTitle.innerHTML = "添加分类";
+      }
+      this.dialogVisible = true;
+    },
+    saveOrUpdate() {
       // 去除字符串两端空格字符
-      this.category.name = this.category.name.trim()
-      if (this.category.name) {
-        save(this.category).then(res => {
-          this.category.name = ''
-          this.listCategories()
-          this.$message.success(res.message)
+      this.category.categoryName = this.category.categoryName.trim()
+      if (this.category.categoryName === '') {
+        this.$message.error('分类名不能为空！')
+        return false
+      }
+      if (this.category.id === null) {
+        save(this.category).then(resp => {
+          if (resp) {
+            this.dialogVisible = false
+            this.$message.success(resp.message)
+            this.listCategories()
+          }
         })
       } else {
-        this.$message.error('分类名称不能为空！')
+        update(this.category).then(resp => {
+          if (resp) {
+            this.dialogVisible = false
+            this.$message.success(resp.message)
+            this.listCategories()
+          }
+        })
       }
-    },
-    search() {
     },
     handleSelectionChange(val) {
       this.multipleSelection = val
     },
-    handleDelete(data) {
-      this.$confirm('确定删除[' + data.name + ']分类?', '提示', {
+    handleDelete(category) {
+      this.$confirm('确定删除[' + category.categoryName + ']分类?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        deleteById(data.id).then(resp => {
+        deleteById(category.id).then(resp => {
           this.listCategories()
           this.$message.success(resp.message)
         })
@@ -196,42 +213,33 @@ export default {
         })
       })
     },
-    handleUpdate(data) {
-      Object.assign(this.category, data)
-      this.dialogVisible = true
-    },
-    doUpdate() {
-      update(this.category).then(resp => {
-        if (resp) {
-          this.dialogVisible = false
-          this.$message.success(resp.message)
-          this.listCategories()
-        }
-      })
-    },
     handleSizeChange(val) {
-      this.pageSize = val
+      this.pagination.pageSize = val
       this.listCategories()
     },
     handleCurrentChange(val) {
-      this.currentPage = val
+      this.pagination.pageNum = val
       this.listCategories()
+    },
+    search() {
     }
   }
 }
 </script>
 
 <style scoped>
-  .operation-container {
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-  }
-  .input {
-    width: 300px;
-    margin-right: 10px;
-  }
-  .pagination {
-    margin-top: 20px;
-  }
+.operation-container {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.input {
+  width: 300px;
+  margin-right: 10px;
+}
+
+.pagination {
+  margin-top: 20px;
+}
 </style>

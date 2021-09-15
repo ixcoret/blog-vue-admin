@@ -53,7 +53,7 @@ export const constantRoutes = [
     path: '/article',
     component: Layout,
     redirect: '/article/list',
-    name: 'Blog',
+    name: 'Article',
     meta: {
       title: '文章管理',
       icon: 'form'
@@ -72,13 +72,18 @@ export const constantRoutes = [
         meta: { title: '发布文章' }
       },
       {
-        path: '/category',
+        path: 'write/:id',
+        component: () => import('@/views/article/article-write'),
+        name: 'Edit'
+      },
+      {
+        path: 'category',
         name: 'Category',
         component: () => import('@/views/category'),
         meta: { title: '文章分类' }
       },
       {
-        path: '/tag',
+        path: 'tag',
         name: 'Tag',
         component: () => import('@/views/tag'),
         meta: { title: '文章标签' }
@@ -86,14 +91,38 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/link',
+    path: '/website',
+    component: Layout,
+    redirect: '/website/info',
+    name: 'Website',
+    meta: {
+      title: '网站管理',
+      icon: 'form'
+    },
+    children: [
+      {
+        path: 'info',
+        name: 'Info',
+        component: () => import('@/views/website/info'),
+        meta: { title: '网站信息' }
+      },
+      {
+        path: 'link',
+        name: 'Link',
+        component: () => import('@/views/website/friend-link'),
+        meta: { title: '友链管理' }
+      }
+    ]
+  },
+  {
+    path: '/log',
     component: Layout,
     children: [
       {
         path: '',
-        name: 'Link',
-        component: () => import('@/views/link'),
-        meta: { title: '友链管理', icon: 'el-icon-link' }
+        name: 'Log',
+        component: () => import('@/views/log'),
+        meta: { title: '系统日志', icon: 'el-icon-link' }
       }
     ]
   },

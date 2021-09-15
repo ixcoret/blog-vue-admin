@@ -4,8 +4,8 @@
       <el-button
         size="small"
         type="danger"
-        :disabled="multipleSelection.length === 0"
-        @click="deleteBatch">批量删除
+        :disabled="articleIdList.length === 0"
+        @click="updateArticleDelete(null)">批量删除
       </el-button>
       <el-button type="primary" icon="el-icon-plus" size="small" @click="write">写文章</el-button>
     </div>
@@ -22,7 +22,7 @@
         prop="title"
         align="center"
         label="标题"
-        width="500"
+        width="600"
         fixed>
       </el-table-column>
       <el-table-column
@@ -35,7 +35,7 @@
         prop="tagNameList"
         align="center"
         label="标签"
-        width="300">
+        width="280">
         <template slot-scope="scope">
           <el-tag
             v-for="item of scope.row.tagList"
@@ -43,7 +43,7 @@
             style="margin: 2px;"
             size="small"
           >
-            {{ item.name }}
+            {{ item.tagName }}
           </el-tag>
         </template>
       </el-table-column>
@@ -57,57 +57,61 @@
         prop="createTime"
         align="center"
         label="发布时间"
-        width="160">
+        width="180">
       </el-table-column>
       <el-table-column
         prop="updateTime"
         align="center"
         label="更新时间"
-        width="160">
+        width="180">
       </el-table-column>
       <el-table-column
         align="center"
         label="操作"
         fixed="right"
-        width="160">
+        width="180">
         <template slot-scope="scope">
           <el-button
             size="mini"
-            @click="handleUpdate(scope.row)">编辑
+            @click="editArticle(scope.row.id)">编辑
           </el-button>
           <el-button
             size="mini"
             type="danger"
-            @click="handleDelete(scope.row)">删除
+            @click="updateArticleDelete(scope.row.id)">删除
           </el-button>
         </template>
       </el-table-column>
     </el-table>
     <el-pagination
       class="pagination"
+      background
       @size-change="handleSizeChange"
       @current-change="handleCurrentChange"
-      :current-page="currentPage"
+      :current-page="pagination.pageNum"
       :page-sizes="[5, 10, 15]"
-      :page-size="pageSize"
+      :page-size="pagination.pageSize"
       layout="total, sizes, prev, pager, next, jumper"
-      :total="total">
+      :total="pagination.total">
     </el-pagination>
   </div>
 </template>
 
 <script>
-import { list } from '@/api/article'
+import { list, updateArticleDelete } from '@/api/article'
 
 export default {
   name: 'ArticleList',
   data() {
     return {
-      multipleSelection: [],
       articleList: [],
-      currentPage: 1,
-      pageSize: 10,
-      total: 0
+      articleIdList: [],
+      deleted: 0,
+      pagination: {
+        pageNum: 1,
+        pageSize: 10,
+        total: 0
+      }
     }
   },
   created() {
@@ -117,28 +121,54 @@ export default {
     write() {
       this.$router.push({ path: '/article/write' })
     },
-    handleSelectionChange(val) {
-      this.multipleSelection = val
-    },
-    listArticles() {
-      const condition = { pageNum: this.currentPage, pageSize: this.pageSize }
-      list(condition).then(res => {
-        this.articleList = res.data.resultList
-        this.total = res.data.total
+    handleSelectionChange(articleList) {
+      this.articleIdList = []  // 先置空
+      articleList.forEach(item => {
+        this.articleIdList.push(item.id)
       })
     },
-    deleteBatch() {
+    listArticles() {
+      const condition = { pageNum: this.pagination.pageNum, pageSize: this.pagination.pageSize }
+      list(condition).then(res => {
+        this.articleList = res.data.list
+        this.pagination.total = res.data.total
+      })
     },
-    handleUpdate(data) {
+    editArticle(id) {
+      this.$router.push({ path: '/article/write/' + id })
     },
-    handleDelete(data) {
+    updateArticleDelete(id) {
+      let param = {};
+      if (id != null) {
+        param.idList = [id]
+      } else {
+        param.idList = this.articleIdList
+      }
+      param.deleted = this.deleted === 0 ? 1 : 0
+      this.$confirm('确定删除[' + param.idList.length + ']篇文章?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        updateArticleDelete(param).then(resp => {
+          if (resp) {
+            this.$message.success(resp.message)
+            this.listArticles()
+          }
+        })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        })
+      })
     },
     handleSizeChange(val) {
-      this.pageSize = val
+      this.pagination.pageSize = val
       this.listArticles()
     },
     handleCurrentChange(val) {
-      this.currentPage = val
+      this.pagination.pageNum = val
       this.listArticles()
     }
   }

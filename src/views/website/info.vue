@@ -1,12 +1,12 @@
 <template>
   <div class="app-container">
-    友情链接
+    网站信息
   </div>
 </template>
 
 <script>
 export default {
-  name: 'Link'
+  name: 'Info'
 }
 </script>
 

@@ -6,7 +6,7 @@ export function save(data) {
   return request({
     url: `${baseUrl}/`,
     method: 'post',
-    data
+    data: data
   })
 }
 
@@ -15,6 +15,21 @@ export function list(params) {
     url: `${baseUrl}/`,
     method: 'get',
     params: params
+  })
+}
+
+export function updateArticleDelete(data) {
+  return request({
+    url: `${baseUrl}/`,
+    method: 'put',
+    data: data
+  })
+}
+
+export function getById(id) {
+  return request({
+    url: `${baseUrl}/${id}`,
+    method: 'get'
   })
 }
 
