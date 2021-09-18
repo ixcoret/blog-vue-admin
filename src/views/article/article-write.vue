@@ -120,9 +120,10 @@ export default {
     }
   },
   created() {
-    const path = this.$route.path
+    /* const path = this.$route.path
     const arr = path.split('/')
-    const articleId = arr[3]
+    const articleId = arr[3] */
+    const articleId = this.$route.params.id
     if (articleId) {
       getById(articleId).then(resp => {
         if (resp) {
