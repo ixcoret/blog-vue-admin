@@ -1,10 +1,10 @@
 import request from '@/utils/request'
 
-const baseUrl = '/sys/user'
+const baseUrl = '/user'
 
 export function login(data) {
   return request({
-    url: `${baseUrl}/login`,
+    url: '/login',
     method: 'post',
     data
   })
@@ -19,7 +19,7 @@ export function getInfo() {
 
 export function logout() {
   return request({
-    url: `${baseUrl}/logout`,
+    url: `/logout`,
     method: 'get'
   })
 }

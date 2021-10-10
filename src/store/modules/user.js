@@ -1,15 +1,9 @@
 import { login, logout, getInfo } from '@/api/user'
-import { getToken, setToken, removeToken } from '@/utils/auth'
 import { resetRouter } from '@/router'
-import md5 from 'blueimp-md5'
 
 const getDefaultState = () => {
   return {
-    token: getToken(),
-    username: '',
-    avatar: '',
-    signature: '',
-    introduction: ''
+    user: null
   }
 }
 
@@ -19,20 +13,8 @@ const mutations = {
   RESET_STATE: (state) => {
     Object.assign(state, getDefaultState())
   },
-  SET_TOKEN: (state, token) => {
-    state.token = token
-  },
-  SET_UERSNAME: (state, username) => {
-    state.username = username
-  },
-  SET_AVATAR: (state, avatar) => {
-    state.avatar = avatar
-  },
-  SET_SIGNATURE: (state, signature) => {
-    state.signature = signature
-  },
-  SET_INTRODUCTION: (state, introduction) => {
-    state.introduction = introduction
+  SET_USER: (state, user) => {
+    state.user = user
   }
 }
 
@@ -41,10 +23,8 @@ const actions = {
   login({ commit }, userInfo) {
     const { username, password } = userInfo
     return new Promise((resolve, reject) => {
-      login({ username: username.trim(), password: md5(password) }).then(response => {
-        const { data } = response
-        commit('SET_TOKEN', data.token)
-        setToken(data.token)
+      login({ username: username.trim(), password: password.trim() }).then(resp => {
+        commit('SET_USER', resp.data)
         resolve()
       }).catch(error => {
         reject(error)
@@ -55,20 +35,12 @@ const actions = {
   // get user info
   getInfo({ commit, state }) {
     return new Promise((resolve, reject) => {
-      getInfo(state.token).then(response => {
-        const { data } = response
-
-        if (!data) {
+      getInfo(state.token).then(resp => {
+        if (!resp) {
           return reject('Verification failed, please Login again.')
         }
-
-        const { username, avatar, signature, introduction } = data
-
-        commit('SET_USERNAME', username)
-        commit('SET_AVATAR', avatar)
-        commit('SET_SIGNATURE', signature)
-        commit('SET_INTRODUCTION', introduction)
-        resolve(data)
+        commit('SET_USER', resp.data)
+        resolve(resp.data)
       }).catch(error => {
         reject(error)
       })
@@ -78,23 +50,13 @@ const actions = {
   // user logout
   logout({ commit, state }) {
     return new Promise((resolve, reject) => {
-      logout(state.token).then(() => {
-        removeToken() // must remove  token  first
+      logout().then(() => {
         resetRouter()
         commit('RESET_STATE')
         resolve()
       }).catch(error => {
         reject(error)
       })
-    })
-  },
-
-  // remove token
-  resetToken({ commit }) {
-    return new Promise(resolve => {
-      removeToken() // must remove  token  first
-      commit('RESET_STATE')
-      resolve()
     })
   }
 }

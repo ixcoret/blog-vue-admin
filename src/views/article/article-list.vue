@@ -122,11 +122,12 @@ export default {
       this.$router.push({ path: '/article/write' })
     },
     handleSelectionChange(articleList) {
-      this.articleIdList = []  // 先置空
+      this.articleIdList = [] // 先置空
       articleList.forEach(item => {
         this.articleIdList.push(item.id)
       })
     },
+    // TODO：修复bug：文章标签为空时，仍然出现标签组件
     listArticles() {
       const condition = { pageNum: this.pagination.pageNum, pageSize: this.pagination.pageSize }
       list(condition).then(res => {
@@ -138,7 +139,7 @@ export default {
       this.$router.push({ path: '/article/write/' + id })
     },
     updateArticleDelete(id) {
-      let param = {};
+      const param = {}
       if (id != null) {
         param.idList = [id]
       } else {

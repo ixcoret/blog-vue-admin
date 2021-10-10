@@ -134,13 +134,13 @@ export default {
       if (tag != null) {
         this.tag.id = tag.id
         this.tag.tagName = tag.tagName
-        this.$refs.tagTitle.innerHTML = "修改标签";
+        this.$refs.tagTitle.innerHTML = '修改标签'
       } else {
-        this.tag.id = null;
-        this.tag.tagName = "";
-        this.$refs.tagTitle.innerHTML = "添加标签";
+        this.tag.id = null
+        this.tag.tagName = ''
+        this.$refs.tagTitle.innerHTML = '添加标签'
       }
-      this.dialogVisible = true;
+      this.dialogVisible = true
     },
     saveOrUpdate() {
       // 去除字符串两端空格字符
